@@ -3,7 +3,6 @@
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
 		$pass = htmlspecialchars($_POST['pass_word']);
-		echo $pass;
 		if (empty($pass) == FALSE){
 			$conn = new mysqli('localhost','userecsys','ecsys123','ecsys');
 			if ($conn->connect_error) {
