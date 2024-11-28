@@ -176,7 +176,7 @@
 			echo '<tr width=100%><td>VOICE_START[0-23]</td><td><input type="number" id="voice_start" name="voice_start" value="';
 			echo $voice_start;
 			echo '"></td></tr>';
-			echo '<tr width=100%><td>VOICE_DURATION[1-24]</td><td><input type="number" id="voice_duration" name="voice_duration" value="';
+			echo '<tr width=100%><td>VOICE_DURATION[0-24]</td><td><input type="number" id="voice_duration" name="voice_duration" value="';
 			echo $voice_duration;
 			echo '"></td></tr>';
 			echo '<tr width=100%><td>SEC</td><td><input type="text" id="sec" name="sec" value="';
