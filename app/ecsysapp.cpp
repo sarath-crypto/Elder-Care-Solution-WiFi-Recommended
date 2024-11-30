@@ -703,7 +703,7 @@ void *displayproc(void *p){
 				}
 				else active = false;
 			}
-			if(afft.voice && active && !ip->alrm){
+			if(afft.voice && active && !ip->alrm  && ip->wifi){
 				syslog(LOG_INFO,"ecsysapp displayproc voice trigger");
 				ip->alrm = true;
 				afft.voice = false;
