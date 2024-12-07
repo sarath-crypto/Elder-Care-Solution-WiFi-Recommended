@@ -472,8 +472,11 @@ void *dbproc(void *p){
                         prep_stmt->executeUpdate();
                         delete prep_stmt;
 	
-                        if((f.wr) && (f.ts-prev_ts >FPS_DURATION)){
+                        if((f.ts-prev_ts) <= FPS_DURATION){
 				prev_ts = f.ts;
+				f.wr = false;
+			}
+                        if(f.wr){
                                 map<unsigned int,string>sname;
                                 for (const auto & p : fs::directory_iterator(FILE_WRITE)){
                                         struct stat attrib;
@@ -488,7 +491,7 @@ void *dbproc(void *p){
                                 }
                                 sname.clear();
 				file_write((char *)f.data,f.len,JPG);
-                        }
+			}
                         ip->fq.pop();
                 }
       		ip->db_state = true;
@@ -703,7 +706,7 @@ void *displayproc(void *p){
 				}
 				else active = false;
 			}
-			if(afft.voice && active && !ip->alrm  && ip->wifi){
+			if(afft.voice && active && !ip->alrm){
 				syslog(LOG_INFO,"ecsysapp displayproc voice trigger");
 				ip->alrm = true;
 				afft.voice = false;
@@ -840,7 +843,7 @@ int main(void){
 
 	vector <int> x,y,w,h;
 	cmd = "maskx";
-    access_dbase(cmd,&ip,DBSTRING);
+       	access_dbase(cmd,&ip,DBSTRING);
 	stringstream ss(cmd.c_str());
 	string sp;
 	while(getline(ss,sp,' '))x.push_back(stoi(sp));
@@ -859,7 +862,7 @@ int main(void){
 	ss = stringstream(cmd.c_str());
 	sp.clear();
 	while(getline(ss,sp,' '))h.push_back(stoi(sp));
-	sp.clear();
+
 
 	Mat fmask = Mat::zeros(FRAME_H,FRAME_W,CV_8UC1);
 	for(unsigned int i = 0;i < h.size();i++)fmask(Rect(x[i],y[i],w[i],h[i])) = 255;
@@ -887,6 +890,10 @@ int main(void){
 	ip.put->m = 0;
 
 	Mat frame;
+	Mat dframe;
+        std::list<cv::Rect2d>boxes;
+	vector<Mat>ch(3);
+	
 	syslog(LOG_INFO,"ecsysapp initialized");
         while(!exit_main){
 		if(!pcam->get_frame(frame)){
@@ -900,23 +907,22 @@ int main(void){
                 	msec = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 			ferror = 0;
 			
-			Mat dframe;
 		       	frame.copyTo(dframe);
-			vector<Mat>ch(3);
 			split(dframe,ch);
 			bitwise_and(ch[0],fmask,ch[0]);
 			bitwise_and(ch[1],fmask,ch[1]);
 			bitwise_and(ch[2],fmask,ch[2]);
 			merge(ch,dframe);
-			
-			for(unsigned int i = 0;i < h.size();i++){
-				Rect roi(x[i],y[i],w[i],h[i]);
-				boxFilter(frame(roi),frame(roi),-1,Size(51,51));
-			}
-
-                        std::list<cv::Rect2d>boxes;
+			ch.clear();
                         boxes = detector.detect(dframe);
-                        for(auto i = boxes.begin(); i != boxes.end(); ++i)rectangle(frame,*i,Scalar(0,69,255),2,LINE_AA); 
+			dframe.release();
+			if(boxes.size()){
+				for(unsigned int i = 0;i < h.size();i++){
+					Rect roi(x[i],y[i],w[i],h[i]);
+					boxFilter(frame(roi),frame(roi),-1,Size(51,51));
+				}
+                        	for(auto i = boxes.begin(); i != boxes.end(); ++i)rectangle(frame,*i,Scalar(0,69,255),2,LINE_AA); 
+			}
 			resize(frame,frame,Size(640,480),INTER_LINEAR);
  	 
 			time_t t;
@@ -949,6 +955,7 @@ int main(void){
                         f.len = buf.size();
                         if(boxes.size())f.wr = true;
                         else f.wr = false;
+			boxes.clear();
 			f.ts = msec;
                         ip.fq.push(f);
         	}
